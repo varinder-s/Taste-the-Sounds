@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Taste the Sounds - Response
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('#cycle').addEventListener('click', function() {
+                let data = {{ data|safe }};
+                let num = Math.floor(Math.random() * (data.length - 1));
+                document.querySelector("#food_name").innerHTML = data[num]["title"];
+                document.querySelector("#food_img").src = data[num]["image"];
+                document.querySelector("#food_search").value = data[num]["title"];
+            }); 
+        });
+    </script>
+{% endblock %}
+
+{% block main %}
+    <p>Your song {{  track.name  }} by {{  track.artists[0].name}} goes well with <span id="food_name"> {{ food[0].title }} </span></p>
+    <div>
+        <img id="food_img" src= "{{  food[0].image  }}" alt="food">
+    </div>
+    <br>
+    {% if session.user_id %}
+        <button id='cycle' class="btn btn-secondary" name="cycle" type="button">
+            Click here to see more food pairings!
+        </button>
+    {% else %}
+        <button id='cycle' class="btn btn-secondary" name="cycle" type="button" disabled>
+            Log in to see more food pairings!
+        </button>
+    {% endif %}
+    <br><br>
+    <form action="https://www.google.com/search" method="get">
+        <input id="food_search" name="q" type="hidden" value="{{  food[0].title }}">
+        <button class="btn btn-secondary" type="submit">
+            Search Google for recipe
+        </button>
+    </form>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Taste the Sounds
+{% endblock %}
+
+{% block scripts %}
+        <script>
+            function scroll() {
+                let buffer = document.querySelector('#fourteen').style.color;
+                document.querySelector('#fourteen').style.color = document.querySelector('#thirteen').style.color;
+                document.querySelector('#thirteen').style.color = document.querySelector('#twelve').style.color;
+                document.querySelector('#twelve').style.color = document.querySelector('#eleven').style.color;
+                document.querySelector('#eleven').style.color = document.querySelector('#ten').style.color;
+                document.querySelector('#ten').style.color = document.querySelector('#nine').style.color;
+                document.querySelector('#nine').style.color = document.querySelector('#eight').style.color;
+                document.querySelector('#eight').style.color = document.querySelector('#seven').style.color;
+                document.querySelector('#seven').style.color = document.querySelector('#six').style.color;
+                document.querySelector('#six').style.color = document.querySelector('#five').style.color;
+                document.querySelector('#five').style.color = document.querySelector('#four').style.color;
+                document.querySelector('#four').style.color = document.querySelector('#three').style.color;
+                document.querySelector('#three').style.color = document.querySelector('#two').style.color;
+                document.querySelector('#two').style.color = document.querySelector('#one').style.color;
+                document.querySelector('#one').style.color = buffer;
+            }
+
+            window.setInterval(scroll, 100);
+        </script>
+{% endblock %}
+
+{% block main %}
+    <h1><span id='one' style='color: red'>T</span><span id='two' style='color: orange'>a</span><span id='three' style='color: yellow'>s</span><span id='four' style='color: green'>t</span><span id='five' style='color: blue'>e</span> <span id='six' style='color: indigo'>t</span><span id='seven' style='color: violet'>h</span><span id='eight' style='color: red'>e</span> <span id='nine' style='color: orange'>S</span><span id='ten' style='color: yellow'>o</span><span id='eleven' style='color: green'>u</span><span id='twelve' style='color: blue'>n</span><span id='thirteen' style='color: indigo'>d</span><span id='fourteen' style='color: violet'>s</span></h1>
+    <br><br>
+    <h5><span>Enter a song and find the food that matches your mood!</span></h5>
+    <form action='/response' method='POST'>
+        <div class="form-group">
+            <input type='text' name='song' autofocus autocomplete='off' placeholder='Song Name and Artist'>
+        </div>
+        <button class="btn btn-secondary" type="submit">Enter</button>
+    </form>
+    <div id='results'>
+        {% if results %}
+        <ol>
+            {% for result in results %}
+            <li>
+                {% for artist in result.artists %}
+                    {{ artist.name }},
+                {% endfor %}
+            </li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+    </div>
+{% endblock %}
