@@ -1,6 +1,6 @@
 import os
+import sqlite3
 
-from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, json
 from flask_session import Session
 from tempfile import mkdtemp
@@ -28,9 +28,6 @@ app.config["SESSION_FILE_DIR"] = mkdtemp()
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
-
-# Configure CS50 Library to use SQLite database
-db = SQL("sqlite:///project.db")
 
 # Ensure all API keys are initialized
 if not os.environ.get("SPOTIPY_CLIENT_ID") or not os.environ.get("SPOTIPY_CLIENT_SECRET") or not os.environ.get("SPOONACULAR_API_KEY"):
@@ -83,6 +80,11 @@ def login():
     # User reached route via POST (as by submitting a form via POST)
     if request.method == "POST":
 
+        # Connect to SQLite database
+        con = sqlite3.connect("project.db")
+        con.row_factory = sqlite3.Row
+        db = con.cursor()
+
         # Ensure username was submitted
         if not request.form.get("username"):
             return redirect("login.html")
@@ -92,7 +94,7 @@ def login():
             return redirect("login.html")
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        rows = db.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),)).fetchall()
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
@@ -123,12 +125,17 @@ def logout():
 def register():
     if request.method == "POST":
         
+        # Connect to SQLite database
+        con = sqlite3.connect("project.db")
+        con.row_factory = sqlite3.Row
+        db = con.cursor()
+
         # Ensure user inputs a username
         if not request.form.get("username"):
             return render_template("register.html")
             
         # Ensure user inputs a username that is not taken
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        rows = db.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),)).fetchall()
         if len(rows) != 0:
             return render_template("register.html")
             
@@ -141,8 +148,9 @@ def register():
             return render_template("register.html")
         
         # Insert username and password hash into database
-        db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", request.form.get("username"),
-                   generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=8))
+        db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", [request.form.get("username"),
+                   generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=8)])
+        con.commit()
         return render_template("login.html")
     else:
         return render_template("register.html")
