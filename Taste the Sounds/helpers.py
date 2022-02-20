@@ -1,7 +1,6 @@
 import os
 
-from cs50 import SQL
-import os
+import sqlite3
 import requests
 import urllib.parse
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -34,11 +33,13 @@ def getFeatures(songID):
 def getMinMax(genres):
     
     # Get min and max values of certain audio features of a song
-    db = SQL("sqlite:///project.db")
+    con = sqlite3.connect("project.db")
+    con.row_factory = sqlite3.Row
+    db = con.cursor()
     artist_genres = {"danceability": [], "energy": [], "valence": []}
     clustered = {"danceability": [], "energy": [], "valence": []}
     MinMax = {"danceability": [], "energy": [], "valence": []}
-    raw_data = db.execute("SELECT * FROM genres")
+    raw_data = db.execute("SELECT * FROM genres").fetchall()
     
     # See if the artist has genres associated with them
     if not genres or genres == None:
@@ -131,13 +132,15 @@ def getFood(track):
     songCal = (songScore * DVCAL) / 3
     songSodium = (songScore * DVSODIUM) / 3
     songFat = (songScore * DVFAT) / 3
-    response = api.nutrient_search(songCal * 1.1, songCal * 0.9, songSodium * 25, songSodium * 0.05, songFat * 25, songFat * 0.05)
+    response = api.search_recipes_by_ingredients(["apple", "flour", "sugar"])
     data = response.json()
     return data
     
 
 def updateDB(track):
-    db = SQL("sqlite:///project.db")
+    con = sqlite3.connect("project.db")
+    con.row_factory = sqlite3.Row
+    db = con.cursor()
     sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials())
     artist = sp.artist(track["artists"][0]["id"])
     artistGenres = artist["genres"]
@@ -165,15 +168,16 @@ def updateDB(track):
     for genre in artistGenres:
         
         # Get genre database
-        dbGenres = db.execute("SELECT * FROM genres WHERE name = ?", genre)
+        dbGenres = db.execute("SELECT * FROM genres WHERE name = ?", (genre,)).fetchall()
         
         # If there is no genre currently, create a new row and add info
         if not dbGenres:
             db.execute("INSERT INTO genres (name, acousticness, danceability, duration_ms, energy, instrumentalness, key, liveness, loudness, mode, speechiness, tempo, time_signature, valence, count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                genre, features["acousticness"], features["danceability"], features["duration_ms"], features["energy"], features["instrumentalness"], features["key"], features["liveness"], features["loudness"], features["mode"], features["speechiness"],
-                features["tempo"], features["time_signature"], features["valence"], 1)
+                [genre, features["acousticness"], features["danceability"], features["duration_ms"], features["energy"], features["instrumentalness"], features["key"], features["liveness"], features["loudness"], features["mode"], features["speechiness"],
+                features["tempo"], features["time_signature"], features["valence"], 1])
+            con.commit()
         else:
-            data = db.execute("SELECT * FROM genres WHERE name = ?", genre)
+            data = db.execute("SELECT * FROM genres WHERE name = ?", (genre,)).fetchall()
             new_data = {}
             
             # Adjust average of each feature in the genre
@@ -183,13 +187,16 @@ def updateDB(track):
             
             # Update database
             db.execute("UPDATE genres SET acousticness = ?, danceability = ?, duration_ms = ?, energy = ?, instrumentalness = ?, key = ?, liveness = ?, loudness = ?, mode = ?, speechiness = ?, tempo = ?, time_signature = ?, valence = ?, count = ? WHERE name = ?",
-                new_data["acousticness"], new_data["danceability"], new_data["duration_ms"], new_data["energy"], new_data["instrumentalness"], new_data["key"], new_data["liveness"], new_data["loudness"], new_data["mode"], new_data["speechiness"],
-                new_data["tempo"], new_data["time_signature"], new_data["valence"], new_data["count"], genre)
+                [new_data["acousticness"], new_data["danceability"], new_data["duration_ms"], new_data["energy"], new_data["instrumentalness"], new_data["key"], new_data["liveness"], new_data["loudness"], new_data["mode"], new_data["speechiness"],
+                new_data["tempo"], new_data["time_signature"], new_data["valence"], new_data["count"], genre])
+            con.commit()
     return 1
 
 # Function used to create initial database of genres
 def fillDB():
-    db = SQL("sqlite:///project.db")
+    con = sqlite3.connect("project.db")
+    con.row_factory = sqlite3.Row
+    db = con.cursor()
     sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials())
     artistList = ["Taylor Swift", "Drake", "Bad Bunny", "BTS", "Ed Sheeran", "Justin Bieber", "Dua Lipa", "Ariana Grande", "Nicki Minaj", "Eminem", "Juice WRLD", "Olivia Rodrigo", "The Weeknd",
     "Doja Cat", "Lil Nas X", "Billie Eilish", "J Balvin", "Post Malone", "Adele", "Kanye West", "Jay Z", "Beyonce", "Harry Styles", "Kendrick Lamar", "Pop Smoke", "Kuldeep Manak", "Jazzy B",
@@ -198,7 +205,7 @@ def fillDB():
     "Blake Shelton", "Johnny Cash", "Keith Urban", "Arjit Singh", "Elvis Presley", "Coldplay", "Imagine Dragons", "Sia", "Shawn Mendes", "Khalid", "Selena Gomez", "Miley Cyrus", "Huey Lewis", 
     "Katy Perry", "Daft Punk", "Avicii", "Twenty One Pilots", "The Chainsmokers", "Jassi Gill", "Guru Randhawa", "Bruno Mars", "Harry Styles", "Alicia Keys", "SZA", "Cardi B",
     "Tyga", "Maluma", "Anuel AA", "Alan Walker", "Swedish House Mafia", "Grimes", "Skrillex", "System of a Down", "The Beatles", "Pitbull", "Janet Jackson", "Stevie Wonder", "One Direction"]
-    seenIDs = db.execute("SELECT id FROM artists")
+    seenIDs = db.execute("SELECT id FROM artists").fetchall()
     seen = set()
     for seenID in seenIDs:
         seen.add(seenID["id"])
@@ -209,7 +216,8 @@ def fillDB():
             if not artist["id"] or artist["id"] == None:
                 continue
             if artist["id"] not in seen:
-                db.execute("INSERT INTO artists (id, name) VALUES (?, ?)", artist["id"], artist["name"])
+                db.execute("INSERT INTO artists (id, name) VALUES (?, ?)", [artist["id"], artist["name"]])
+                con.commit()
                 seen.add(artist["id"])
                 artistID = artist["id"]
                 artistGenres = artist["genres"]
@@ -246,20 +254,22 @@ def fillDB():
                                 del features["track_href"]
                                 del features["analysis_url"]
                                 for genre in artistGenres:
-                                    dbGenres = db.execute("SELECT * FROM genres WHERE name = ?", genre)
+                                    dbGenres = db.execute("SELECT * FROM genres WHERE name = ?", (genre,)).fetchall()
                                     if not dbGenres:
                                         db.execute("INSERT INTO genres (name, acousticness, danceability, duration_ms, energy, instrumentalness, key, liveness, loudness, mode, speechiness, tempo, time_signature, valence, count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                                            genre, features["acousticness"], features["danceability"], features["duration_ms"], features["energy"], features["instrumentalness"], features["key"], features["liveness"], features["loudness"], features["mode"], features["speechiness"],
-                                            features["tempo"], features["time_signature"], features["valence"], 1)
+                                            [genre, features["acousticness"], features["danceability"], features["duration_ms"], features["energy"], features["instrumentalness"], features["key"], features["liveness"], features["loudness"], features["mode"], features["speechiness"],
+                                            features["tempo"], features["time_signature"], features["valence"], 1])
+                                        con.commit()
                                     else:
-                                        data = db.execute("SELECT * FROM genres WHERE name = ?", genre)
+                                        data = db.execute("SELECT * FROM genres WHERE name = ?", (genre,)).fetchall()
                                         new_data = {}
                                         for feature in features:
                                             new_data[feature] = ((data[0][feature] * data[0]["count"]) + features[feature]) / (data[0]["count"] + 1)
                                         new_data["count"] = data[0]["count"] + 1
                                         db.execute("UPDATE genres SET acousticness = ?, danceability = ?, duration_ms = ?, energy = ?, instrumentalness = ?, key = ?, liveness = ?, loudness = ?, mode = ?, speechiness = ?, tempo = ?, time_signature = ?, valence = ?, count = ? WHERE name = ?",
-                                            new_data["acousticness"], new_data["danceability"], new_data["duration_ms"], new_data["energy"], new_data["instrumentalness"], new_data["key"], new_data["liveness"], new_data["loudness"], new_data["mode"], new_data["speechiness"],
-                                            new_data["tempo"], new_data["time_signature"], new_data["valence"], new_data["count"], genre)
+                                            [new_data["acousticness"], new_data["danceability"], new_data["duration_ms"], new_data["energy"], new_data["instrumentalness"], new_data["key"], new_data["liveness"], new_data["loudness"], new_data["mode"], new_data["speechiness"],
+                                            new_data["tempo"], new_data["time_signature"], new_data["valence"], new_data["count"], genre])
+                                        con.commit()
     return 1
                                     
                                     
