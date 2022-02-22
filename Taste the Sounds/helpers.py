@@ -12,8 +12,6 @@ api = spoon.API(os.environ.get("SPOONACULAR_API_KEY"))
 
 # Constants. Determined by actual daily averages for each amount
 DVCAL = 2250
-DVFAT = 69
-DVSODIUM = 3400
 
 
 def getTrack(song):
@@ -130,9 +128,7 @@ def getFood(track):
     # Finding nutrient info relative to each song
     # 3 determined by most people eating 3 meals per day
     songCal = (songScore * DVCAL) / 3
-    songSodium = (songScore * DVSODIUM) / 3
-    songFat = (songScore * DVFAT) / 3
-    response = api.search_recipes_by_ingredients(["apple", "flour", "sugar"])
+    response = api.search_recipes_complex("", minCalories= songCal * 0.9, maxCalories = songCal * 1.1)
     data = response.json()
     return data
     

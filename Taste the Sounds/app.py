@@ -57,18 +57,18 @@ def response():
     updateDB(track)
     
     # Get food info from Spoonacular
-    food = getFood(track)
+    food = getFood(track)["results"]
     if len(food) < 1:
         return redirect("/")
         
     # Allow logged in users to get multiple options for each search
     if "user_id" in session:
         data = json.dumps(food)
-        return render_template("response.html",food=food, track=track, data=data)
+        return render_template("response.html", food=food, track=track, data=data)
     else:
         food = food[:1]
         data = json.dumps(food)
-        return render_template("response.html",food=food, track=track, data=data)
+        return render_template("response.html", food=food, track=track, data=data)
     
 @app.route("/login", methods=["GET", "POST"])
 def login():
