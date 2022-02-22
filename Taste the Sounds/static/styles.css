@@ -9,15 +9,15 @@ nav .navbar-brand .white
 {
     color: white;
 }
-.lightgray
+.gray
 {
-    background-color: #292929;
-    color: lightgray;
+    background-color: lightgray;
+    color: darkgray;
 }
-.darkgray
+.whitish
 {
-    background-color: #1b1b1b;
-    color: lightgray;
+    background-color: #f5f5f5;
+    color: black;
 }
 nav .navbar-brand .yellow
 {
@@ -60,18 +60,18 @@ main img
 
 a
 {
-    color: lightgray;
+    color: black;
     text-decoration: none;
     background-color: transparent;
 }
 
 a:hover {
-  color: white;
+  color: darkgray;
 }
 
 .btn {
-    color: lightgray;
-    background-color: #292929;
+    color: black;
+    background-color: lightgray;
     border-color: #3f3f3f;
 }
 
