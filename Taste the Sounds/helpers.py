@@ -49,12 +49,9 @@ def getMinMax(genres):
             clustered["valence"].append(data["valence"])
             
         # Get the min and max values from the genre averages
-        MinMax["danceability"].append(min(clustered["danceability"]))
-        MinMax["energy"].append(min(clustered["energy"]))
-        MinMax["valence"].append(min(clustered["valence"]))
-        MinMax["danceability"].append(max(clustered["danceability"]))
-        MinMax["energy"].append(max(clustered["energy"]))
-        MinMax["valence"].append(max(clustered["valence"]))
+        for key in clustered:
+            MinMax[key].append(min(clustered[key]))
+            MinMax[key].append(max(clustered[key]))
         return MinMax
     else:
         
@@ -76,12 +73,9 @@ def getMinMax(genres):
         artist_genres["valence"].append(mean(clustered["valence"]))
         
         # Get the min and max values from the genre averages
-        MinMax["danceability"].append(min(artist_genres["danceability"]))
-        MinMax["energy"].append(min(artist_genres["energy"]))
-        MinMax["valence"].append(min(artist_genres["valence"]))
-        MinMax["danceability"].append(max(artist_genres["danceability"]))
-        MinMax["energy"].append(max(artist_genres["energy"]))
-        MinMax["valence"].append(max(artist_genres["valence"]))
+        for key in artist_genres:
+            MinMax[key].append(min(artist_genres[key]))
+            MinMax[key].append(max(artist_genres[key]))
         return MinMax
     
 def getFood(track):
@@ -126,7 +120,7 @@ def getFood(track):
     songScore = abs((perDance + perEnergy + perValence) / 300)
     
     # Finding nutrient info relative to each song
-    # 3 determined by most people eating 3 meals per day
+    # Dividing by 3 determined by most people eating 3 meals per day
     songCal = (songScore * DVCAL) / 3
     response = api.search_recipes_complex("", minCalories= songCal * 0.9, maxCalories = songCal * 1.1)
     data = response.json()
