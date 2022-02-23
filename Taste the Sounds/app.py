@@ -6,7 +6,7 @@ from flask_session import Session
 from tempfile import mkdtemp
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import getTrack, getFeatures, fillDB, getFood, updateDB
+from helpers import getTrack, getFood, updateDB
 
 # Configure application
 app = Flask(__name__)
@@ -158,8 +158,3 @@ def register():
 @app.route("/about")
 def about():
     return render_template("about.html")
-
-# Create an account in order to save search history and get a different recommendation if you don't like the first one, also allow users to pick the song if the results isnt for the song they had in mind (session[song] to store input)
-# Add filters for the search (breakfast, lunch, dinner, dietary restrictions, etc)
-# Add like buttons for rec to influence future answers
-# Go through list of foods that match if they keep asking for different rec, after list is done, say that algo is work in progress and new matches will be available soon

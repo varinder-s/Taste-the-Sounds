@@ -10,7 +10,7 @@ from statistics import pstdev, mean
 import spoonacular as spoon
 api = spoon.API(os.environ.get("SPOONACULAR_API_KEY"))
 
-# Constants. Determined by actual daily averages for each amount
+# Calories determined by daily average intake
 DVCAL = 2250
 
 
@@ -188,109 +188,3 @@ def updateDB(track):
             con.commit()
     return 1
 
-# Function used to create initial database of genres
-def fillDB():
-    con = sqlite3.connect("project.db")
-    con.row_factory = sqlite3.Row
-    db = con.cursor()
-    sp = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials())
-    artistList = ["Taylor Swift", "Drake", "Bad Bunny", "BTS", "Ed Sheeran", "Justin Bieber", "Dua Lipa", "Ariana Grande", "Nicki Minaj", "Eminem", "Juice WRLD", "Olivia Rodrigo", "The Weeknd",
-    "Doja Cat", "Lil Nas X", "Billie Eilish", "J Balvin", "Post Malone", "Adele", "Kanye West", "Jay Z", "Beyonce", "Harry Styles", "Kendrick Lamar", "Pop Smoke", "Kuldeep Manak", "Jazzy B",
-    "Surjit Bindrakhia", "Sidhu Moose Wala", "Karan Aujla", "Diljit", "Amrinder Gill", "AP Dhillon", "Babbu Mann", "Imran Khan", "Beethoven", "John Legend", "Mariah Carey", "John Lennon",
-    "Ozzy Osborne", "Metallica", "Queen", "Led Zeppelin", "Garth Brooks", "Michael Jackson", "Billy Joel", "Shakira", "Elton John", "Aerosmith", "Madonna", "Tupac", "Backstreet Boys",
-    "Blake Shelton", "Johnny Cash", "Keith Urban", "Arjit Singh", "Elvis Presley", "Coldplay", "Imagine Dragons", "Sia", "Shawn Mendes", "Khalid", "Selena Gomez", "Miley Cyrus", "Huey Lewis", 
-    "Katy Perry", "Daft Punk", "Avicii", "Twenty One Pilots", "The Chainsmokers", "Jassi Gill", "Guru Randhawa", "Bruno Mars", "Harry Styles", "Alicia Keys", "SZA", "Cardi B",
-    "Tyga", "Maluma", "Anuel AA", "Alan Walker", "Swedish House Mafia", "Grimes", "Skrillex", "System of a Down", "The Beatles", "Pitbull", "Janet Jackson", "Stevie Wonder", "One Direction"]
-    seenIDs = db.execute("SELECT id FROM artists").fetchall()
-    seen = set()
-    for seenID in seenIDs:
-        seen.add(seenID["id"])
-    for artistName in artistList:
-        artists = sp.search(artistName, type='artist')
-        artists = artists["artists"]["items"]
-        for artist in artists:
-            if not artist["id"] or artist["id"] == None:
-                continue
-            if artist["id"] not in seen:
-                db.execute("INSERT INTO artists (id, name) VALUES (?, ?)", [artist["id"], artist["name"]])
-                con.commit()
-                seen.add(artist["id"])
-                artistID = artist["id"]
-                artistGenres = artist["genres"]
-                if not artistGenres or artistGenres == None:
-                    continue
-                albums = sp.artist_albums(artistID, limit=50)
-                if not albums or albums == None:
-                    continue
-                albums = albums["items"]
-                unique = set()
-                for album in albums:
-                    if not album["name"] or album["name"]  == None:
-                        continue
-                    if album["name"].lower not in unique:
-                        unique.add(album["name"].lower)
-                        albumID = album["id"]
-                        albumTracks = sp.album_tracks(albumID)
-                        if not albumTracks or albumTracks == None:
-                            continue
-                        albumTracks = albumTracks["items"]
-                        duplicate = set()
-                        for track in albumTracks:
-                            if not track["name"] or track["name"] == None:
-                                continue
-                            if track["name"].lower not in duplicate:
-                                duplicate.add(track["name"].lower)
-                                features = getFeatures(track["id"])
-                                if not features[0] or features[0] == None:
-                                    continue
-                                features = features[0]
-                                del features["type"]
-                                del features["id"]
-                                del features["uri"]
-                                del features["track_href"]
-                                del features["analysis_url"]
-                                for genre in artistGenres:
-                                    dbGenres = db.execute("SELECT * FROM genres WHERE name = ?", (genre,)).fetchall()
-                                    if not dbGenres:
-                                        db.execute("INSERT INTO genres (name, acousticness, danceability, duration_ms, energy, instrumentalness, key, liveness, loudness, mode, speechiness, tempo, time_signature, valence, count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                                            [genre, features["acousticness"], features["danceability"], features["duration_ms"], features["energy"], features["instrumentalness"], features["key"], features["liveness"], features["loudness"], features["mode"], features["speechiness"],
-                                            features["tempo"], features["time_signature"], features["valence"], 1])
-                                        con.commit()
-                                    else:
-                                        data = db.execute("SELECT * FROM genres WHERE name = ?", (genre,)).fetchall()
-                                        new_data = {}
-                                        for feature in features:
-                                            new_data[feature] = ((data[0][feature] * data[0]["count"]) + features[feature]) / (data[0]["count"] + 1)
-                                        new_data["count"] = data[0]["count"] + 1
-                                        db.execute("UPDATE genres SET acousticness = ?, danceability = ?, duration_ms = ?, energy = ?, instrumentalness = ?, key = ?, liveness = ?, loudness = ?, mode = ?, speechiness = ?, tempo = ?, time_signature = ?, valence = ?, count = ? WHERE name = ?",
-                                            [new_data["acousticness"], new_data["danceability"], new_data["duration_ms"], new_data["energy"], new_data["instrumentalness"], new_data["key"], new_data["liveness"], new_data["loudness"], new_data["mode"], new_data["speechiness"],
-                                            new_data["tempo"], new_data["time_signature"], new_data["valence"], new_data["count"], genre])
-                                        con.commit()
-    return 1
-                                    
-                                    
-                        
-    
-# Genre linked to arist
-# Get artists
-# Get artists genres
-# Get songs from artist
-# Get audio features of each song
-# Aggregate audio features and link them to each genre (put info into database)
-# Repeat for multiple artsts
-# Give each genre some food/cuisine/meal
-
-# For a given song (input)
-# Find closest match of audio features in the artists genres
-# Output food based on genre (base)
-# Output food based on genre and some other features (better)
-# Output food based on genre, some other features, and user feedback (best)
-
-# Databases
-# Genres
-#   id, name, acousticness, danceability, duration_ms, energy, instrumentalness, key(mode), liveness, loudness, mode(mode), speechiness, tempo, time_signature(mode), valence, count
-
-
-# CREATE TABLE genres (id INTEGER NOT NULL, name TEXT NOT NULL, acousticness INTEGER NOT NULL, danceability INTEGER NOT NULL, duration_ms INTEGER NOT NULL, energy INTEGER NOT NULL, instrumentalness INTEGER NOT NULL, key INTEGER NOT NULL, liveness INTEGER NOT NULL, loudness INTEGER NOT NULL, mode INTEGER NOT NULL, speechiness INTEGER NOT NULL, tempo INTEGER NOT NULL, time_signature INTEGER NOT NULL, valence INTEGER NOT NULL, count INTEGER NOT NULL, PRIMARY KEY(id));
-
-# CREATE TABLE artists (id INTEGER NOT NULL, name TEXT NOT NULL, PRIMARY KEY(id));
